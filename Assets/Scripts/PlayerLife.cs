@@ -24,7 +24,7 @@ public class PlayerLife : MonoBehaviour
         animator.SetTrigger("death");
     }
 
-    private void RestartLife()
+    public void RestartLife()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }

@@ -7,10 +7,11 @@ public class PlayerMovement : MonoBehaviour
     private BoxCollider2D collider;
     private Animator animator;
 
+    enum MovementState { standing = 0, running = 1, falling = 2, jumping = 3}
     [SerializeField] private LayerMask jumpGround;
-    private enum MovementState { standing, running, falling, jumping }
     [SerializeField] private float movespeed = 7f;
     [SerializeField] private float jumpForce = 12f;
+    [SerializeField] private Joystick _joystick;
 
     private void Start()
     {
@@ -22,46 +23,75 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        
         float dirX = Input.GetAxisRaw("Horizontal");
-        rb.velocity = new Vector2(dirX * movespeed, rb.velocity.y);
-        Jump();
-        UpdateAnimation(dirX);
+        if (_joystick.Horizontal == 0)
+        {
+            UpdateAnimation(dirX,false);
+        }
+        else if (_joystick.Horizontal != 0)
+        {
+            UpdateAnimation(dirX, true);
+        }
     }
-    public void Jump()
+    public void Moving(float dirX, bool jump)
     {
-        if (Input.GetButtonDown("Jump") && IsGrounded())
+        rb.velocity = new Vector2(dirX * movespeed, rb.velocity.y);
+
+        if (jump && IsGrounded())
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-        }       
+        }
     }
-    public void UpdateAnimation(float dirX)
+    public void UpdateAnimation(float dirX, bool isJoystick)
     {
         MovementState state;
-        if (dirX > 0f)
+        if (isJoystick)
         {
-            state = MovementState.running;
-            sprite.flipX = false;
-        }
-        else if (dirX < 0f)
-        {
-            state = MovementState.running;
-            sprite.flipX = true;
+            if (_joystick.Horizontal > 0f)
+            {
+                state = MovementState.running;
+                sprite.flipX = false;
+            }
+            else if (_joystick.Horizontal < 0f)
+            {
+                state = MovementState.running;
+                sprite.flipX = true;
+            }
+            else
+            {
+                state = MovementState.standing;
+            }
         }
         else
         {
-            state = MovementState.standing;
-        }
+            if (dirX > 0f)
+            {
+                state = MovementState.running;
+                sprite.flipX = false;
+            }
+            else if (dirX < 0f)
+            {
+                state = MovementState.running;
+                sprite.flipX = true;
+            }
+            else
+            {
+                state = MovementState.standing;
+            }
 
-        if (rb.velocity.y > .1f)
-        {
-            state = MovementState.jumping;
-        }
-        else if (rb.velocity.y < -.1f)
-        {
-            state = MovementState.falling;
+            if (rb.velocity.y > .1f)
+            {
+                state = MovementState.jumping;
+            }
+            else if (rb.velocity.y < -.1f)
+            {
+                state = MovementState.falling;
+            }
         }
         animator.SetInteger("state", (int)state);
     }
+
     private bool IsGrounded()
     {
         return Physics2D.BoxCast(collider.bounds.center, collider.bounds.size, 0f, Vector2.down, .1f, jumpGround);
